@@ -1,0 +1,13 @@
+name: ModelMaker
+version: 1.0.0
+authors: [FEST_Channel]
+
+description: Check out the author - https://github.com/festino/
+
+main: com.festp.modelmaker.Main
+
+commands:
+         makemodel:
+           description: The only one feature.
+           default: op
+api-version: 1.16
