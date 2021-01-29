@@ -45,8 +45,15 @@ public class MakeModelCommand implements CommandExecutor {
 			
 			double scale = Double.parseDouble(args[7]);
 
-			double xMin = - xOffset / 2;
-			double zMin = - zOffset / 2;
+			double zeroXOffset = xCenter - Math.floor(xCenter);
+			double zeroZOffset = zCenter - Math.floor(zCenter);
+			int xBlockCenter = (int) (xCenter - zeroXOffset);
+			int zBlockCenter = (int) (zCenter - zeroZOffset);
+			
+			double xMin = Math.ceil(zeroXOffset - xOffset / 2 - 0.5);
+			double zMin = Math.ceil(zeroZOffset - zOffset / 2 - 0.5);
+			double xMax = zeroXOffset + xOffset / 2 - 0.5;
+			double zMax = zeroZOffset + zOffset / 2 - 0.5;
 
 			int materialIndex = 0;
 			List<Material> materials = new ArrayList<>();
@@ -54,16 +61,16 @@ public class MakeModelCommand implements CommandExecutor {
 			String elements = "\"elements\": [";
 			int elementCount = 0;
 			
-			for (int x = (int) xMin; x < xMin + xOffset; x++) {
-				for (int z = (int) zMin; z < zMin + zOffset; z++) {
-					double xCur = 8 + x * scale;
-					double zCur = 8 + z * scale;
+			for (int x = (int) xMin; x <= xMax; x++) {
+				for (int z = (int) zMin; z <= zMax; z++) {
+					double xCur = 8 + x * scale - zeroXOffset * scale;
+					double zCur = 8 + z * scale - zeroZOffset * scale;
 					int yTop = (int) yOffset;
 					Material lastMaterial = Material.AIR;
 					Material material = Material.AIR;
 					for (int y = yTop - 1; y >= -1; y--) {
 						if ((int)yMin + y >= 0)
-							material = world.getBlockAt((int)xCenter + x, (int)yMin + y, (int)zCenter + z).getType();
+							material = world.getBlockAt(xBlockCenter + x, (int) yMin + y, zBlockCenter + z).getType();
 						if (material != lastMaterial || y < 0) {
 							if (lastMaterial != Material.AIR) {
 								elementCount++;
