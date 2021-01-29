@@ -21,22 +21,6 @@ public class MakeModelCommand implements CommandExecutor {
 	public String getCommand() {
 		return "makemodel";
 	}
-	
-	/** @return min x, min y, size */
-	private Vector getColorPlace(int i) {
-		double size = 8;
-		int length = 1;
-		int layerLength = 2 * length - 1;
-		while (i >= layerLength) {
-			i -= layerLength;
-			size /= 2;
-			length = 2 * length + 1;
-			layerLength = 2 * length - 1;
-		}
-		if (i < length)
-			return new Vector(i * size, (length - 1) * size, size);
-		return new Vector((length - 1) * size, (layerLength - i - 1) * size, size);
-	}
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String lbl, String[] args) {
@@ -92,7 +76,7 @@ public class MakeModelCommand implements CommandExecutor {
 								double yTo = yTop * scale;
 								String from = "\"from\": [ " + xFrom + ", " + yFrom + ", " + zFrom + " ]";
 								String to = "\"to\": [ " + xTo + ", " + yTo + ", " + zTo + " ]";
-								String textureTag = "{ \"texture\": \"#tex\", \"uv\": " + materialUV.get(materialIndex) + " }";
+								String textureTag = "{ \"texture\": \"#tex" + materialIndex + "\", \"uv\": " + materialUV.get(materialIndex) + " }";
 								String element = "\t\t" + nameTag + ",\n\t\t" + from + ",\n\t\t" + to + ",\n\t\t";
 								element += "\"faces\": { \"north\": " + textureTag + ", \"east\": " + textureTag + ", \"south\": " + textureTag
 										+ ", \"west\": " + textureTag + ", \"up\": " + textureTag + ", \"down\": " + textureTag + "\t}";
@@ -130,46 +114,105 @@ public class MakeModelCommand implements CommandExecutor {
 				}
 			}
 
+			String comment = "\"__comment\": \"Material ids:";
+			String textures = "\"textures\": {";
 			sender.sendMessage(ChatColor.GREEN + "Resourcepack needs assets/minecraft/textures/block/" + name + ".png");
 			for (int i = 0; i < materials.size(); i++) {
 				Material m = materials.get(i);
 				String matName = m.toString().toLowerCase();
 				sender.sendMessage(ChatColor.GREEN + "You need pixel " + materialUV.get(i) + " for " + matName + " :D");
-				
+				if (i > 0) {
+					comment += ",";
+					textures += ",";
+				}
+				comment += "\n\t#" + i + ": " + matName + "";
+				textures += "\n\t\"tex" + i + "\": \"minecraft:block/" + name + "\"";
 			}
-
-			String header = "\"textures\": { ";
-			header += "\n\t\"tex\": \"minecraft:block/" + name + "\"";
-			header += "\n }";
+			comment += "\"";
+			textures += "\n}";
+			String header = comment + ",\n" + textures;
 			
 			elements += "\n ]";
 			
-			String display = "";
-
-			String dirPath = "plugins" + SEPARATOR + "ModelMaker";
-			String fileName = dirPath + SEPARATOR + name + ".json";
-			File file = new File(fileName);
-			try {
-				File path = new File(dirPath);
-				path.mkdirs();
-				file.createNewFile();
-				FileWriter writer = new FileWriter(file, false);
-				writer.append("{\n");
-				writer.append(header);
-				writer.append(",\n");
-				writer.append(display);
-				writer.append("\n");
-				writer.append(elements);
-				writer.append("\n}");
-				writer.close();
-				sender.sendMessage(ChatColor.GREEN + "Search your brand new model in " + ChatColor.UNDERLINE + fileName
-						+ ChatColor.RESET + ChatColor.GREEN + "!");
-			} catch (IOException ex) {
-				sender.sendMessage(ChatColor.RED + "Can't IO...\n" + ex.getMessage());
-			}
+			saveToFile(name, header, elements, sender);
 		} catch(Exception ex) {
 			sender.sendMessage(ChatColor.RED + "Rubbish!\n" + ex.getMessage());
 		}
 		return true;
+	}
+	
+	/** Provides slow expanding palette on limited canvas; mipmapping should be disabled
+	 * @return min x, min y, size */
+	private Vector getColorPlace(int i) {
+		double size = 8;
+		int length = 1;
+		int layerLength = 2 * length - 1;
+		while (i >= layerLength) {
+			i -= layerLength;
+			size /= 2;
+			length = 2 * length + 1;
+			layerLength = 2 * length - 1;
+		}
+		if (i < length)
+			return new Vector(i * size, (length - 1) * size, size);
+		return new Vector((length - 1) * size, (layerLength - i - 1) * size, size);
+	}
+	
+	private void saveToFile(String modelName, String header, String elements, CommandSender sender)
+	{
+		String display = "\"display\": {\r\n" + 
+				"\t\"gui\": {\r\n" + 
+				"\t\t\"rotation\": [ 30, 45, 0 ],\r\n" + 
+				"\t\t\"translation\": [ 0, 0, 0 ],\r\n" + 
+				"\t\t\"scale\": [ 0.625, 0.625, 0.625 ]\r\n" + 
+				"\t},\r\n" + 
+				"\t\"ground\": {\r\n" + 
+				"\t\t\"rotation\": [ 0, 0, 0 ],\r\n" + 
+				"\t\t\"translation\": [ 0, 3, 0 ],\r\n" + 
+				"\t\t\"scale\": [ 0.25, 0.25, 0.25 ]\r\n" + 
+				"\t},\r\n" + 
+				"\t\"fixed\": {\r\n" + 
+				"\t\t\"rotation\": [ 0, 180, 0 ],\r\n" + 
+				"\t\t\"translation\": [ 0, 0, 0 ],\r\n" + 
+				"\t\t\"scale\": [ 1, 1, 1 ]\r\n" + 
+				"\t},\r\n" + 
+				"\t\"head\": {\r\n" + 
+				"\t\t\"rotation\": [ 0, 180, 0 ],\r\n" + 
+				"\t\t\"translation\": [ 0, 0, 0 ],\r\n" + 
+				"\t\t\"scale\": [ 1, 1, 1 ]\r\n" + 
+				"\t},\r\n" + 
+				"\t\"firstperson_righthand\": {\r\n" + 
+				"\t\t\"rotation\": [ 0, 315, 0 ],\r\n" + 
+				"\t\t\"translation\": [ 0, 2.5, 0 ],\r\n" + 
+				"\t\t\"scale\": [ 0.4, 0.4, 0.4 ]\r\n" + 
+				"\t},\r\n" + 
+				"\t\"thirdperson_righthand\": {\r\n" + 
+				"\t\t\"rotation\": [ 75, 315, 0 ],\r\n" + 
+				"\t\t\"translation\": [ 0, 2.5, 0 ],\r\n" + 
+				"\t\t\"scale\": [ 0.375, 0.375, 0.375 ]\r\n" + 
+				"\t}\r\n" + 
+				"},";
+
+		String dirPath = "plugins" + SEPARATOR + "ModelMaker";
+		String fileName = dirPath + SEPARATOR + modelName + ".json";
+		File file = new File(fileName);
+		try {
+			File path = new File(dirPath);
+			path.mkdirs();
+			file.createNewFile();
+			FileWriter writer = new FileWriter(file, false);
+			writer.append("{\n");
+			writer.append(header);
+			writer.append(",\n");
+			writer.append(display);
+			writer.append("\n");
+			writer.append(elements);
+			writer.append("\n}");
+			writer.close();
+			sender.sendMessage(ChatColor.GREEN + "Search your brand new model in " + ChatColor.UNDERLINE + fileName
+					+ ChatColor.RESET + ChatColor.GREEN + "!");
+		} catch (IOException ex) {
+			sender.sendMessage(ChatColor.RED + "Can't IO...\n" + ex.getMessage());
+		}
 	}
 }
